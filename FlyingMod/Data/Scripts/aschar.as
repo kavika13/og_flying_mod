@@ -5850,7 +5850,12 @@ void UpdateMovementControls(const Timestep &in ts) {
         flip_info.UpdateFlip(ts);
     } else {
         jump_info.UpdateAirControls(ts);
-        UpdateAirAttackControls();
+
+        // FLYING MOD
+        if (!g_flying_mod_is_flying_active) {
+            UpdateAirAttackControls();
+        }
+
         if(jump_info.ClimbedUp()){
             SetOnGround(true);
             duck_amount = 1.0f;
