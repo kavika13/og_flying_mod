@@ -1,6 +1,6 @@
 #include "fliproll.as"
 #include "ledgegrab.as"
-#include "../Custom/CryptoSeven/flying_mod/flying_mod.as"
+#include "flying_mod.as"
 
 const float _jump_fuel_burn = 10.0f; // multiplier for amount of fuel lost per time_step
 const float _jump_fuel = 5.0f; // used to set the amount of fuel available at the start of a jump

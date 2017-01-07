@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <particle>
-    <textures color_map = "Data/Custom/NMcCoy/Textures/flipspark.tga"
-              shader = "glowsprite2"
+    <textures color_map = "Data/Textures/Particles/flyingmod_flipspark.tga"
+              shader = "flyingmod_glowsprite"
               soft_shader = "glowspritesoft"/>
     <stretch velocity_axis = "true" speed_stretch = "true" min_squash = "true"/>
     <size min = "0.01" max = "0.26"/>

@@ -209,14 +209,14 @@ void FlyingAnimations() {
     if (!jump_info.hit_wall) {
         if (flyingMode == 1 && air_dash < 1) {
             // Flapping
-            this_mo.SetAnimation("Data/Custom/LePetitDocteur/Animations/wingflap.anm", 5.0f, 0);
+            this_mo.SetAnimation("Data/Animations/flyingmod_wingflap.anm", 5.0f, 0);
             // this_mo.SetCharAnimation("jump", 20.0f, 0);
         } else if (flyingMode == 2 && air_dash < 1) {
             // Gliding
             if (this_mo.velocity.y < -24.0f) {
-                this_mo.SetAnimation("Data/Custom/LePetitDocteur/Animations/diving.anm", 5.0f, 0);
+                this_mo.SetAnimation("Data/Animations/flyingmod_diving.anm", 5.0f, 0);
             } else {
-                this_mo.SetAnimation("Data/Custom/LePetitDocteur/Animations/glide.anm", 5.0f, 0);
+                this_mo.SetAnimation("Data/Animations/flyingmod_glide.anm", 5.0f, 0);
             }
         } else {
             if (air_time > 0.5f) {
@@ -459,6 +459,5 @@ void SpinSpark() {
     vec3 head_pos = com + displ;
     vec3 spin_vel = normalize(cross(displ, tempaxis)) * -3.0f;
     spin_vel += displ * -1.3f;
-    MakeParticle("Data/Custom/NMcCoy/Particles/sparkle2.xml", head_pos, spin_vel);
-    // MakeParticle("Data/Particles/metalspark.xml", head_pos, spin_vel);
+    MakeParticle("Data/Particles/flyingmod_sparkle.xml", head_pos, spin_vel);
 }
