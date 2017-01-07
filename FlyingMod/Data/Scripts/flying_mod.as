@@ -1,80 +1,78 @@
 // Controls
 string flapping = "attack";
 string gliding = "grab";
-string flyingToggleKey = "f";
 
-bool flyingActive = false;
-int flyingMode = 0;
-float flap_counter = 1.0f;
-float flap_modifier = 0.3f;
-float tilt_modifier = 1.0f;
-vec3 oldFlyFace = vec3(0.0f);
-float roll_modifier = 0.0f;
-bool is_swooped = false;
-int air_dash = 0;
-bool has_air_dash = true;
-vec3 dash_direction = vec3(0);
-bool after_wall_flip = false;
-float wall_flip_time = 0.0f;
-const int _TETHERED_SWOOP = -1;
-float _air_control_extra = _air_control * 4.0f;
+bool g_flying_mod_is_flying_active = false;
+int g_flying_mod_flying_mode = 0;
+float g_flying_mod_flap_counter = 1.0f;
+float g_flying_mod_flap_modifier = 0.3f;
+float g_flying_mod_tilt_modifier = 1.0f;  // TODO: Should this be shared with other scripts? Does A227 update this definition?
+vec3 g_flying_mod_old_fly_face = vec3(0.0f);
+float g_flying_mod_roll_modifier = 0.0f;  // TODO: Should this be shared with other scripts? Does A227 update this definition?
+bool g_flying_mod_is_swooped = false;
+int g_flying_mod_air_dash = 0;
+bool g_flying_mod_has_air_dash = true;
+bool g_flying_mod_after_wall_flip = false;
+float g_flying_mod_wall_flip_time = 0.0f;
+const int _FLYING_MOD_TETHERED_SWOOP = -1;
+float g_flying_mod_air_control_extra = _air_control * 4.0f;  // _air_control defined in aircontrol.as
 
 void FlyingMode() {
     if (GetInputDown(this_mo.controller_id, flapping) && this_mo.controlled) {
         // Flapping
-        flyingMode = 1;
+        g_flying_mod_flying_mode = 1;
     } else if (GetInputDown(this_mo.controller_id, gliding) && this_mo.controlled) {
         // Gliding
-        flyingMode = 2;
+        g_flying_mod_flying_mode = 2;
     } else {
         // Falling
-        flyingMode = 0;
+        g_flying_mod_flying_mode = 0;
     }
 }
 
 void UpdateFlying(const Timestep& in ts) {
-    if (flyingActive) {
+    if (g_flying_mod_is_flying_active) {
         FlyingMode();
         FlyingAttacks();
         FlyingAnimations();
         AirDash();
         CheckForSwoopDrag();
 
-        if (flyingMode == 1) {
+        if (g_flying_mod_flying_mode == 1) {
             // Flapping
             float tempY = this_mo.velocity.y;
             this_mo.velocity = NewDirection(GetTargetVelocity(), 0.01f);
             this_mo.velocity.y = tempY;
-            flap_counter += flap_modifier;
+            g_flying_mod_flap_counter += g_flying_mod_flap_modifier;
 
             if (!jump_info.hit_wall) {
                 if (this_mo.velocity.y < 0) {
                     this_mo.velocity.y += 0.1f;
                 }
 
-                if (flap_modifier < 0 && this_mo.velocity.y < 10.0f) {
+                if (g_flying_mod_flap_modifier < 0 && this_mo.velocity.y < 10.0f) {
                     this_mo.velocity.y += 0.5f;
                 }
 
-                if (flap_counter > 50.0f) {
-                    flap_modifier = -1.0f;
-                } else if (flap_counter < 2.0f) {
-                    flap_modifier = 0.5f;
+                if (g_flying_mod_flap_counter > 50.0f) {
+                    g_flying_mod_flap_modifier = -1.0f;
+                } else if (g_flying_mod_flap_counter < 2.0f) {
+                    g_flying_mod_flap_modifier = 0.5f;
                 }
 
-                if (tilt_modifier < 1.8f) {
-                    tilt_modifier += 0.02f;
-                } else if (tilt_modifier > 2.0f) {
-                    tilt_modifier -= 0.02f;
+                if (g_flying_mod_tilt_modifier < 1.8f) {
+                    g_flying_mod_tilt_modifier += 0.02f;
+                } else if (g_flying_mod_tilt_modifier > 2.0f) {
+                    g_flying_mod_tilt_modifier -= 0.02f;
                 }
             } else if (this_mo.velocity.y < 10.0f) {
                 this_mo.velocity.y+= 0.2f;
             }
         } else {
-            flap_counter = 40.0f;
-            flap_modifier = 0.5f;
+            g_flying_mod_flap_counter = 40.0f;
+            g_flying_mod_flap_modifier = 0.5f;
 
-            if (flyingMode == 2) {
+            if (g_flying_mod_flying_mode == 2) {
                 // Gliding
                 this_mo.velocity = NewDirection(camera.GetFacing(), 0.03f);
 
@@ -83,24 +81,24 @@ void UpdateFlying(const Timestep& in ts) {
                         this_mo.velocity.y -= 0.3f;
                     }
 
-                    if (tilt_modifier > 3.0f) {
-                        tilt_modifier -= 0.02f;
+                    if (g_flying_mod_tilt_modifier > 3.0f) {
+                        g_flying_mod_tilt_modifier -= 0.02f;
                     }
                 }
 
-                if (tilt_modifier < 4.5f) {
-                    tilt_modifier += 0.05f;
+                if (g_flying_mod_tilt_modifier < 4.5f) {
+                    g_flying_mod_tilt_modifier += 0.05f;
                 }
-            } else if (tilt_modifier > 1.0f) {
+            } else if (g_flying_mod_tilt_modifier > 1.0f) {
                 // Falling
-                tilt_modifier -= 0.02f;
+                g_flying_mod_tilt_modifier -= 0.02f;
             }
         }
 
         if (!jump_info.hit_wall) {
             // Tilt
             if (this_mo.velocity.x != 0 || this_mo.velocity.z != 0) {
-                tilt = this_mo.velocity * tilt_modifier;
+                tilt = this_mo.velocity * g_flying_mod_tilt_modifier;
                 float tilt_cap = 90.0f;
                 tilt_cap -= this_mo.velocity.y * 2;
 
@@ -111,45 +109,45 @@ void UpdateFlying(const Timestep& in ts) {
 
             // Roll
             if (air_time < 0.1f) {
-                roll_modifier = 0;
+                g_flying_mod_roll_modifier = 0;
             }
 
             vec3 flyFace = normalize(flatten(this_mo.velocity));
-            vec3 cross_flyFace = cross(oldFlyFace, flyFace);
+            vec3 cross_flyFace = cross(g_flying_mod_old_fly_face, flyFace);
 
-            if (roll_modifier > 1.0f) {
-                roll_modifier = 1.0f;
-            } else if (roll_modifier < -1.0f) {
-                roll_modifier = -1.0f;
+            if (g_flying_mod_roll_modifier > 1.0f) {
+                g_flying_mod_roll_modifier = 1.0f;
+            } else if (g_flying_mod_roll_modifier < -1.0f) {
+                g_flying_mod_roll_modifier = -1.0f;
             } else {
-                float old_roll = roll_modifier;
-                roll_modifier += cross_flyFace.y;
+                float old_roll = g_flying_mod_roll_modifier;
+                g_flying_mod_roll_modifier += cross_flyFace.y;
 
-                if (abs(roll_modifier) > abs(old_roll) - 0.001f) {
-                    roll_modifier *= 0.97f;
+                if (abs(g_flying_mod_roll_modifier) > abs(old_roll) - 0.001f) {
+                    g_flying_mod_roll_modifier *= 0.97f;
                 }
             }
 
             // Rotated 90 degrees left
-            oldFlyFace = flyFace;
-            float temp = oldFlyFace.x;
-            oldFlyFace.x = -oldFlyFace.z;
-            oldFlyFace.z = temp;
+            g_flying_mod_old_fly_face = flyFace;
+            float temp = g_flying_mod_old_fly_face.x;
+            g_flying_mod_old_fly_face.x = -g_flying_mod_old_fly_face.z;
+            g_flying_mod_old_fly_face.z = temp;
 
-            flyFace = normalize(flyFace + oldFlyFace * roll_modifier * abs(roll_modifier) * 3.2f);
+            flyFace = normalize(flyFace + g_flying_mod_old_fly_face * g_flying_mod_roll_modifier * abs(g_flying_mod_roll_modifier) * 3.2f);
             this_mo.SetRotationFromFacing(flyFace);
-            oldFlyFace = normalize(flatten(this_mo.velocity));
+            g_flying_mod_old_fly_face = normalize(flatten(this_mo.velocity));
         }
     } else if (!jump_info.hit_wall) {
         this_mo.SetCharAnimation("jump", 20.0f, 0);
     }
 
     // Reduces movement control after wall flip
-    if (after_wall_flip) {
-        if (wall_flip_time > 0.6f) {
-            after_wall_flip = false;
+    if (g_flying_mod_after_wall_flip) {
+        if (g_flying_mod_wall_flip_time > 0.6f) {
+            g_flying_mod_after_wall_flip = false;
         } else {
-            wall_flip_time += ts.step();
+            g_flying_mod_wall_flip_time += ts.step();
         }
     }
 
@@ -162,7 +160,7 @@ void UpdateFlying(const Timestep& in ts) {
 void FlyingAttacks() {
     int air_attack_id = -1;
 
-    if (WantsToDragBody() || air_dash > 0) {
+    if (WantsToDragBody() || g_flying_mod_air_dash > 0) {
         int closest_id = GetClosestCharacterID(3.0f, _TC_ENEMY | _TC_CONSCIOUS);
         air_attack_id = closest_id;
     }
@@ -171,10 +169,10 @@ void FlyingAttacks() {
         return;
     }
 
-    if (air_dash > 0 && length(this_mo.velocity) > 50.0f
+    if (g_flying_mod_air_dash > 0 && length(this_mo.velocity) > 50.0f
             && distance(this_mo.position, ReadCharacterID(air_attack_id).position) <= _attack_range + range_extender) {
         // Air dash attack
-        has_air_dash = true;
+        g_flying_mod_has_air_dash = true;
         target_id = air_attack_id;
         MovementObject @char = ReadCharacterID(target_id);
         vec3 start = this_mo.position;
@@ -187,18 +185,18 @@ void FlyingAttacks() {
             "HandleRagdollImpactImpulse(impulse, this_mo.GetAvgIKChainPos(\"torso\"), 5.0f);" +
             "ragdoll_limp_stun = 1.0f;" +
             "recovery_time = 2.0f;");
-    } else if (WantsToGrabLedge() && !WantsToJump() && air_dash < 1 && length(this_mo.velocity) > 20.0f
+    } else if (WantsToGrabLedge() && !WantsToJump() && g_flying_mod_air_dash < 1 && length(this_mo.velocity) > 20.0f
             && distance(this_mo.position, ReadCharacterID(air_attack_id).position)
                 <= _attack_range + range_extender + 0.5f) {
         // Swoop attack
-        has_air_dash = true;
+        g_flying_mod_has_air_dash = true;
         target_id = air_attack_id;
         MovementObject @char = ReadCharacterID(target_id);
         PlaySound("Data/Sounds/ambient/amb_canyon_rock_1.wav", this_mo.position);
         tether_id = target_id;
         // MOD TEST
         // tethered = _TETHERED_DRAGBODY;
-        tethered = _TETHERED_SWOOP;
+        tethered = _FLYING_MOD_TETHERED_SWOOP;
         char.Execute(
             "SetTetherID(" + this_mo.getID() + ");" +
             "SetTethered(_TETHERED_DRAGGEDBODY);");
@@ -207,11 +205,11 @@ void FlyingAttacks() {
 
 void FlyingAnimations() {
     if (!jump_info.hit_wall) {
-        if (flyingMode == 1 && air_dash < 1) {
+        if (g_flying_mod_flying_mode == 1 && g_flying_mod_air_dash < 1) {
             // Flapping
             this_mo.SetAnimation("Data/Animations/flyingmod_wingflap.anm", 5.0f, 0);
             // this_mo.SetCharAnimation("jump", 20.0f, 0);
-        } else if (flyingMode == 2 && air_dash < 1) {
+        } else if (g_flying_mod_flying_mode == 2 && g_flying_mod_air_dash < 1) {
             // Gliding
             if (this_mo.velocity.y < -24.0f) {
                 this_mo.SetAnimation("Data/Animations/flyingmod_diving.anm", 5.0f, 0);
@@ -230,22 +228,22 @@ void FlyingAnimations() {
 
 void AirDash() {
     if (jump_info.hit_wall || air_time < 0.1f) {
-        has_air_dash = true;
+        g_flying_mod_has_air_dash = true;
     }
 
     if (!jump_info.hit_wall) {
-        if (has_air_dash && this_mo.controlled && tethered == _TETHERED_FREE && WantsToFlip()
+        if (g_flying_mod_has_air_dash && this_mo.controlled && tethered == _TETHERED_FREE && WantsToFlip()
                 && !flip_info.IsFlipping()) {
-            has_air_dash = false;
+            g_flying_mod_has_air_dash = false;
 
-            if (air_dash < 1) {
-                air_dash = 100 ;
+            if (g_flying_mod_air_dash < 1) {
+                g_flying_mod_air_dash = 100 ;
             }
-        } else if (air_dash > 0) {
-            air_dash--;
+        } else if (g_flying_mod_air_dash > 0) {
+            g_flying_mod_air_dash--;
         }
 
-        if (air_dash > 0) {
+        if (g_flying_mod_air_dash > 0) {
             if (length(this_mo.velocity) < 80.0f) {
                 this_mo.velocity *= 1.02f;
             }
@@ -263,20 +261,20 @@ void AirDash() {
 
 void FlyingStuff(const Timestep& in ts) {
     // Toggle flying
-    if (this_mo.controlled && GetInputPressed(this_mo.controller_id, flyingToggleKey)) {
-        if (flyingActive) {
-            flyingActive = false;
-            air_dash = 0;
+    if (this_mo.controlled && GetInputPressed(this_mo.controller_id, g_flying_mod_toggle_flying_key)) {
+        if (g_flying_mod_is_flying_active) {
+            g_flying_mod_is_flying_active = false;
+            g_flying_mod_air_dash = 0;
             PlaySound("Data/Sounds/ice_foley/bf_ice_heavy_2.wav", this_mo.position);
         } else {
-            flyingActive = true;
+            g_flying_mod_is_flying_active = true;
             PlaySound("Data/Sounds/ambient/amb_canyon_hawk_1.wav");
         }
     }
 
     // Stop being ragdoll when swoop ends
-    if (is_swooped && tethered != _TETHERED_DRAGGEDBODY) {
-        is_swooped = false;
+    if (g_flying_mod_is_swooped && tethered != _TETHERED_DRAGGEDBODY) {
+        g_flying_mod_is_swooped = false;
 
         if (knocked_out == _unconscious) {
             SetKnockedOut(_awake);
@@ -284,7 +282,7 @@ void FlyingStuff(const Timestep& in ts) {
         }
     }
 
-    if (tethered == _TETHERED_SWOOP) {
+    if (tethered == _FLYING_MOD_TETHERED_SWOOP) {
         // Update ragdoll during swoop
         if (!on_ground) {
             MovementObject @char = ReadCharacterID(tether_id);
@@ -304,12 +302,12 @@ void FlyingStuff(const Timestep& in ts) {
 
     // Go ragdoll when being swooped
     if (tethered == _TETHERED_DRAGGEDBODY && knocked_out == _awake) {
-        is_swooped = true;
+        g_flying_mod_is_swooped = true;
         GoLimp();
         SetKnockedOut(_unconscious);
     }
 
-    if (tethered == _TETHERED_SWOOP) {
+    if (tethered == _FLYING_MOD_TETHERED_SWOOP) {
         if (!WantsToDragBody()) {
             UnTether();
             return;
@@ -345,8 +343,8 @@ void FlyingStuff(const Timestep& in ts) {
         this_mo.SetRotationFromFacing(InterpDirections(this_mo.GetFacing(), tether_rel, 1.0 - pow(0.95f, ts.frames())));
     }
 
-    if (ledge_info.on_ledge && air_dash > 0) {
-        air_dash = 0;
+    if (ledge_info.on_ledge && g_flying_mod_air_dash > 0) {
+        g_flying_mod_air_dash = 0;
     }
 }
 
@@ -368,10 +366,10 @@ void WallCrash() {
 
     if (length(this_mo.velocity) * dot(normalize(flatten(this_mo.velocity)), jump_info.wall_dir) > 12.0f) {
         GoLimp();
-        has_air_dash = false;
+        g_flying_mod_has_air_dash = false;
     }
 
-    air_dash = 0;
+    g_flying_mod_air_dash = 0;
 }
 
 void SetJumpVelocity(const Timestep& in ts) {
@@ -385,19 +383,19 @@ void SetJumpVelocity(const Timestep& in ts) {
         (this_mo.velocity.x + target_velocity.x) * (this_mo.velocity.x + target_velocity.x)
         + (this_mo.velocity.z + target_velocity.z) * (this_mo.velocity.z + target_velocity.z);
 
-    if (after_wall_flip) {
+    if (g_flying_mod_after_wall_flip) {
         this_mo.velocity += _air_control * target_velocity * ts.step();
     } else if (!(updated_velocity_size > 150)) {
-        this_mo.velocity += _air_control_extra * target_velocity * ts.step();
+        this_mo.velocity += g_flying_mod_air_control_extra * target_velocity * ts.step();
     } else {
         // Increases sideward and backward control at high speeds
         if (updated_velocity_size < velocity_size + 22 && this_mo.controlled) {
             if (updated_velocity_size < velocity_size) {
-                this_mo.velocity += _air_control_extra * target_velocity * ts.step() * 2;
+                this_mo.velocity += g_flying_mod_air_control_extra * target_velocity * ts.step() * 2;
             } else {
                 this_mo.velocity.x *= 0.996f;
                 this_mo.velocity.z *= 0.996f;
-                this_mo.velocity += target_velocity * _air_control_extra * ts.step();
+                this_mo.velocity += target_velocity * g_flying_mod_air_control_extra * ts.step();
             }
         }
 
@@ -407,7 +405,7 @@ void SetJumpVelocity(const Timestep& in ts) {
 
 void CheckForSwoopDrag() {
     // FLYING MOD No body drag when air dashing or holding jump
-    if (tethered == _TETHERED_FREE && this_mo.controlled && WantsToDragBody() && !WantsToJump() && air_dash < 1) {
+    if (tethered == _TETHERED_FREE && this_mo.controlled && WantsToDragBody() && !WantsToJump() && g_flying_mod_air_dash < 1) {
         int closest_id = GetClosestCharacterID(2.0f, _TC_RAGDOLL | _TC_UNCONSCIOUS);
 
         if (closest_id != -1) {
@@ -415,7 +413,7 @@ void CheckForSwoopDrag() {
             drag_body_part = "head";
             drag_body_part_id = 0;
             tether_id = closest_id;
-            tethered = _TETHERED_SWOOP;
+            tethered = _FLYING_MOD_TETHERED_SWOOP;
             drag_strength_mult = 0.0f;
             char.Execute(
                 "SetTetherID(" + this_mo.getID() + ");" +

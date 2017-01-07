@@ -2289,7 +2289,7 @@ string recover_key = "x";
 string path_key = "p";
 string scream_key = "v";
 string lightning_key = "g";  // FLYING MOD uses f key
-string flying_key = "f";
+string g_flying_mod_toggle_flying_key = "f";
 string combat_rabbit_key = "1";
 string civ_rabbit_key = "2";
 string cat_key = "3";
@@ -6465,7 +6465,7 @@ void HandleAirCollisions(const Timestep &in ts) {
     }
     if(landing){
         // FLYING MOD - bounce if air dash
-        if (air_dash > 0) {
+        if (g_flying_mod_air_dash > 0) {
             this_mo.velocity.y *=- 1.0f;
             return;
         }
