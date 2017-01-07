@@ -191,15 +191,17 @@ void FlyingAttacks() {
         // Swoop attack
         g_flying_mod_has_air_dash = true;
         target_id = air_attack_id;
-        MovementObject @char = ReadCharacterID(target_id);
         PlaySound("Data/Sounds/ambient/amb_canyon_rock_1.wav", this_mo.position);
-        tether_id = target_id;
-        // MOD TEST
-        // tethered = _TETHERED_DRAGBODY;
-        tethered = _FLYING_MOD_TETHERED_SWOOP;
-        char.Execute(
-            "SetTetherID(" + this_mo.getID() + ");" +
-            "SetTethered(_TETHERED_DRAGGEDBODY);");
+
+        // Copied from StartBodyDrag
+        MovementObject @char = ReadCharacterID(target_id);
+        drag_body_part = "head";
+        drag_body_part_id = 0;
+        SetTetherID(target_id);
+        SetTethered(_FLYING_MOD_TETHERED_SWOOP);
+        drag_strength_mult = 0.0f;
+        char.Execute("SetTetherID(" + this_mo.getID() + ");" +
+                     "SetTethered(_TETHERED_DRAGGEDBODY);");
     }
 }
 
