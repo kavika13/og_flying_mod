@@ -2288,7 +2288,8 @@ string limp_ragdoll_key = "m";
 string recover_key = "x";
 string path_key = "p";
 string scream_key = "v";
-string lightning_key = "f";
+string lightning_key = "g";  // FLYING MOD uses f key
+string flying_key = "f";
 string combat_rabbit_key = "1";
 string civ_rabbit_key = "2";
 string cat_key = "3";
@@ -2755,6 +2756,9 @@ void UpdateState(const Timestep &in ts) {
 
     UpdateThreatAmount(ts);
     UpdateIdleType();
+
+    // FLYING MOD
+    FlyingStuff(ts);
 
     switch(state){
     case _movement_state:
@@ -6460,6 +6464,12 @@ void HandleAirCollisions(const Timestep &in ts) {
         }
     }
     if(landing){
+        // FLYING MOD - bounce if air dash
+        if (air_dash > 0) {
+            this_mo.velocity.y *=- 1.0f;
+            return;
+        }
+
         {
             float shock = old_vel.y * -1.0f;
             if(shock > _shock_damage_threshold){

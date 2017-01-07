@@ -1,5 +1,6 @@
 #include "fliproll.as"
 #include "ledgegrab.as"
+#include "flying_mod.as"
 
 const float _jump_fuel_burn = 10.0f; // multiplier for amount of fuel lost per time_step
 const float _jump_fuel = 5.0f; // used to set the amount of fuel available at the start of a jump
@@ -67,6 +68,11 @@ class JumpInfo {
             } else {
                 this_mo.MaterialEvent("leftwallstep", this_mo.position+dir*_leg_sphere_size);                
             }
+
+            // FLYING MOD
+            if (flyingActive) {
+                WallCrash();
+            }
         }
 
         hit_wall = true;
@@ -81,6 +87,8 @@ class JumpInfo {
         if(hit_wall){
             hit_wall = false;
             this_mo.SetRotationFromFacing(wall_run_facing);
+            // FLYING MOD - has_hit_wall updated to enable regaining wall contact after fall
+            has_hit_wall = false;
         }
     }
 
@@ -99,12 +107,21 @@ class JumpInfo {
         flailing = min(0.6f+sin(time*2.0f)*0.2f,flailing);
         this_mo.rigged_object().anim_client().SetBlendCoord("up_coord",up_coord);
         this_mo.rigged_object().anim_client().SetBlendCoord("tuck_coord",flip_info.GetTuck());
-        this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
+
+        // FLYING MOD - Avoid flailiing ruining flying animations
+        if (flyingMode == 0) {
+            this_mo.SetBlendCoord("flail_coord", flailing);
+            this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
+        }
+
         int8 flags = 0;
         if(left_foot_jump){
             flags = _ANM_MIRRORED;
         }
-        this_mo.SetCharAnimation("jump",20.0f,flags);
+
+        // FLYING MOD - prevent animation
+        // this_mo.SetCharAnimation("jump",20.0f,flags);
+
         this_mo.rigged_object().ik_enabled = false;
     }
 
@@ -200,6 +217,10 @@ class JumpInfo {
             AchievementEvent("wall_flip");
             StartWallJump(wall_dir * -1.0f);
             flip_info.StartWallFlip(wall_dir * -1.0f);
+
+            // FLYING MOD - Resets timer for new wall flip
+            wall_flip_time = 0.0f;
+            after_wall_flip = true;
         }
     }
 
@@ -220,6 +241,9 @@ class JumpInfo {
                 }
             }
         }
+
+        // FLYING MOD
+        UpdateFlying(ts);
 
         if(!hit_wall){
             if(WantsToFlip()){
@@ -248,8 +272,10 @@ class JumpInfo {
         if(!ledge_info.on_ledge){
             ledge_delay -= ts.step();
             if(!follow_jump_path){
-                vec3 target_velocity = GetTargetVelocity();
-                this_mo.velocity += target_velocity * _air_control * ts.step();
+                // FLYING MOD
+                SetJumpVelocity(ts);
+                // vec3 target_velocity = GetTargetVelocity();
+                // this_mo.velocity += target_velocity * _air_control * ts.step();
             }
         }
 
@@ -294,6 +320,10 @@ class JumpInfo {
             target_velocity = vec3(target_velocity.x, 0.0f, target_velocity.z);
         } else {
             jump_vel = GetJumpVelocity(target_velocity, ground_normal);
+
+            // FLYING MOD - Reduced initial velocity
+            jump_vel.x *= 0.8f;
+            jump_vel.z *= 0.8f;
         }
         this_mo.velocity = jump_vel;
 		if(this_mo.controlled){
