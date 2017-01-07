@@ -974,7 +974,7 @@ void HandleSpecialKeyPresses() {
             string sound = "Data/Sounds/voice/torikamal/fallscream.xml";
             this_mo.ForceSoundGroupVoice(sound, 0.0f);
         }
-		//FLYING MOD uses f key
+        // FLYING MOD uses f key
         if(GetInputPressed(this_mo.controller_id, "g")){
             int num_chars = GetNumCharacters();
             for(int i=0; i<num_chars; ++i){
@@ -1248,8 +1248,10 @@ void UpdateState(const Timestep &in ts) {
 
     UpdateThreatAmount(ts);
     UpdateIdleType();
-	//FLYING MOD
-	FlyingStuff(ts);
+
+    // FLYING MOD
+    FlyingStuff(ts);
+
     if(state == _movement_state){
         UpdateDuckAmount(ts);
         UpdateGroundAndAirTime(ts);
@@ -1454,12 +1456,10 @@ vec3 GetTargetHeadDir(const Timestep &in ts) {
             dir_flat.y = 0.0f;
             target_head_dir = mix(dir_flat, normalize(dir_flat), 0.5f);
             target_head_dir.y = camera.GetFacing().y * 0.4f;
-			//FLYING MOD - disable head looking away from camera in air
-			/*
-            if(!on_ground){
-                target_head_dir = mix(target_head_dir, this_mo.GetFacing(), 0.5f);
-            }
-			*/
+            // FLYING MOD - disable head looking away from camera in air
+            // if(!on_ground){
+            //     target_head_dir = mix(target_head_dir, this_mo.GetFacing(), 0.5f);
+            // }
             target_head_dir = normalize(target_head_dir);
             look_inertia = 0.8f;
         } else {
@@ -3891,8 +3891,12 @@ void HandleAirCollisions(const Timestep &in ts) {
         }
     }
     if(landing){
-		//FLYING MOD - bounce if air dash
-		if(air_dash > 0) {this_mo.velocity.y *=-1.0f; return;}
+        // FLYING MOD - bounce if air dash
+        if (air_dash > 0) {
+            this_mo.velocity.y *=-1.0f;
+            return;
+        }
+
         CheckForVelocityShock(old_vel.y);                                   // Check landing damage from high-speed falls
         if(knocked_out == _awake){                                          // If still conscious, land properly
             ground_normal = landing_normal;
