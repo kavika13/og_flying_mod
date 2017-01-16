@@ -31,115 +31,111 @@ void FlyingMode() {
 }
 
 void UpdateFlying(const Timestep& in ts) {
-    if(g_flying_mod_is_flying_active) {
-        FlyingMode();
-        FlyingAttacks();
-        FlyingAnimations();
-        AirDash();
-        CheckForSwoopDrag();
+    FlyingMode();
+    FlyingAttacks();
+    FlyingAnimations();
+    AirDash();
+    CheckForSwoopDrag();
 
-        if(g_flying_mod_flying_mode == 1) {
-            // Flapping
-            float tempY = this_mo.velocity.y;
-            this_mo.velocity = NewDirection(GetTargetVelocity(), 0.01f);
-            this_mo.velocity.y = tempY;
-            g_flying_mod_flap_counter += g_flying_mod_flap_modifier;
-
-            if(!jump_info.hit_wall) {
-                if(this_mo.velocity.y < 0) {
-                    this_mo.velocity.y += 0.1f;
-                }
-
-                if(g_flying_mod_flap_modifier < 0 && this_mo.velocity.y < 10.0f) {
-                    this_mo.velocity.y += 0.5f;
-                }
-
-                if(g_flying_mod_flap_counter > 50.0f) {
-                    g_flying_mod_flap_modifier = -1.0f;
-                } else if(g_flying_mod_flap_counter < 2.0f) {
-                    g_flying_mod_flap_modifier = 0.5f;
-                }
-
-                if(g_flying_mod_tilt_modifier < 1.8f) {
-                    g_flying_mod_tilt_modifier += 0.02f;
-                } else if(g_flying_mod_tilt_modifier > 2.0f) {
-                    g_flying_mod_tilt_modifier -= 0.02f;
-                }
-            } else if(this_mo.velocity.y < 10.0f) {
-                this_mo.velocity.y+= 0.2f;
-            }
-        } else {
-            g_flying_mod_flap_counter = 40.0f;
-            g_flying_mod_flap_modifier = 0.5f;
-
-            if(g_flying_mod_flying_mode == 2) {
-                // Gliding
-                this_mo.velocity = NewDirection(camera.GetFacing(), 0.03f);
-
-                if(this_mo.velocity.y > 0) {
-                    if(air_time > 2.0f) {
-                        this_mo.velocity.y -= 0.3f;
-                    }
-
-                    if(g_flying_mod_tilt_modifier > 3.0f) {
-                        g_flying_mod_tilt_modifier -= 0.02f;
-                    }
-                }
-
-                if(g_flying_mod_tilt_modifier < 4.5f) {
-                    g_flying_mod_tilt_modifier += 0.05f;
-                }
-            } else if(g_flying_mod_tilt_modifier > 1.0f) {
-                // Falling
-                g_flying_mod_tilt_modifier -= 0.02f;
-            }
-        }
+    if(g_flying_mod_flying_mode == 1) {
+        // Flapping
+        float tempY = this_mo.velocity.y;
+        this_mo.velocity = NewDirection(GetTargetVelocity(), 0.01f);
+        this_mo.velocity.y = tempY;
+        g_flying_mod_flap_counter += g_flying_mod_flap_modifier;
 
         if(!jump_info.hit_wall) {
-            // Tilt
-            if(this_mo.velocity.x != 0 || this_mo.velocity.z != 0) {
-                tilt = this_mo.velocity * g_flying_mod_tilt_modifier;
-                float tilt_cap = 90.0f;
-                tilt_cap -= this_mo.velocity.y * 2;
-
-                if(length(tilt) > tilt_cap) {
-                    tilt = normalize(tilt) * tilt_cap;
-                }
+            if(this_mo.velocity.y < 0) {
+                this_mo.velocity.y += 0.1f;
             }
 
-            // Roll
-            if(air_time < 0.1f) {
-                g_flying_mod_roll_modifier = 0;
+            if(g_flying_mod_flap_modifier < 0 && this_mo.velocity.y < 10.0f) {
+                this_mo.velocity.y += 0.5f;
             }
 
-            vec3 flyFace = normalize(flatten(this_mo.velocity));
-            vec3 cross_flyFace = cross(g_flying_mod_old_fly_face, flyFace);
-
-            if(g_flying_mod_roll_modifier > 1.0f) {
-                g_flying_mod_roll_modifier = 1.0f;
-            } else if(g_flying_mod_roll_modifier < -1.0f) {
-                g_flying_mod_roll_modifier = -1.0f;
-            } else {
-                float old_roll = g_flying_mod_roll_modifier;
-                g_flying_mod_roll_modifier += cross_flyFace.y;
-
-                if(abs(g_flying_mod_roll_modifier) > abs(old_roll) - 0.001f) {
-                    g_flying_mod_roll_modifier *= 0.97f;
-                }
+            if(g_flying_mod_flap_counter > 50.0f) {
+                g_flying_mod_flap_modifier = -1.0f;
+            } else if(g_flying_mod_flap_counter < 2.0f) {
+                g_flying_mod_flap_modifier = 0.5f;
             }
 
-            // Rotated 90 degrees left
-            g_flying_mod_old_fly_face = flyFace;
-            float temp = g_flying_mod_old_fly_face.x;
-            g_flying_mod_old_fly_face.x = -g_flying_mod_old_fly_face.z;
-            g_flying_mod_old_fly_face.z = temp;
-
-            flyFace = normalize(flyFace + g_flying_mod_old_fly_face * g_flying_mod_roll_modifier * abs(g_flying_mod_roll_modifier) * 3.2f);
-            this_mo.SetRotationFromFacing(flyFace);
-            g_flying_mod_old_fly_face = normalize(flatten(this_mo.velocity));
+            if(g_flying_mod_tilt_modifier < 1.8f) {
+                g_flying_mod_tilt_modifier += 0.02f;
+            } else if(g_flying_mod_tilt_modifier > 2.0f) {
+                g_flying_mod_tilt_modifier -= 0.02f;
+            }
+        } else if(this_mo.velocity.y < 10.0f) {
+            this_mo.velocity.y+= 0.2f;
         }
-    } else if(!jump_info.hit_wall) {
-        this_mo.SetCharAnimation("jump", 20.0f, 0);
+    } else {
+        g_flying_mod_flap_counter = 40.0f;
+        g_flying_mod_flap_modifier = 0.5f;
+
+        if(g_flying_mod_flying_mode == 2) {
+            // Gliding
+            this_mo.velocity = NewDirection(camera.GetFacing(), 0.03f);
+
+            if(this_mo.velocity.y > 0) {
+                if(air_time > 2.0f) {
+                    this_mo.velocity.y -= 0.3f;
+                }
+
+                if(g_flying_mod_tilt_modifier > 3.0f) {
+                    g_flying_mod_tilt_modifier -= 0.02f;
+                }
+            }
+
+            if(g_flying_mod_tilt_modifier < 4.5f) {
+                g_flying_mod_tilt_modifier += 0.05f;
+            }
+        } else if(g_flying_mod_tilt_modifier > 1.0f) {
+            // Falling
+            g_flying_mod_tilt_modifier -= 0.02f;
+        }
+    }
+
+    if(!jump_info.hit_wall) {
+        // Tilt
+        if(this_mo.velocity.x != 0 || this_mo.velocity.z != 0) {
+            tilt = this_mo.velocity * g_flying_mod_tilt_modifier;
+            float tilt_cap = 90.0f;
+            tilt_cap -= this_mo.velocity.y * 2;
+
+            if(length(tilt) > tilt_cap) {
+                tilt = normalize(tilt) * tilt_cap;
+            }
+        }
+
+        // Roll
+        if(air_time < 0.1f) {
+            g_flying_mod_roll_modifier = 0;
+        }
+
+        vec3 flyFace = normalize(flatten(this_mo.velocity));
+        vec3 cross_flyFace = cross(g_flying_mod_old_fly_face, flyFace);
+
+        if(g_flying_mod_roll_modifier > 1.0f) {
+            g_flying_mod_roll_modifier = 1.0f;
+        } else if(g_flying_mod_roll_modifier < -1.0f) {
+            g_flying_mod_roll_modifier = -1.0f;
+        } else {
+            float old_roll = g_flying_mod_roll_modifier;
+            g_flying_mod_roll_modifier += cross_flyFace.y;
+
+            if(abs(g_flying_mod_roll_modifier) > abs(old_roll) - 0.001f) {
+                g_flying_mod_roll_modifier *= 0.97f;
+            }
+        }
+
+        // Rotated 90 degrees left
+        g_flying_mod_old_fly_face = flyFace;
+        float temp = g_flying_mod_old_fly_face.x;
+        g_flying_mod_old_fly_face.x = -g_flying_mod_old_fly_face.z;
+        g_flying_mod_old_fly_face.z = temp;
+
+        flyFace = normalize(flyFace + g_flying_mod_old_fly_face * g_flying_mod_roll_modifier * abs(g_flying_mod_roll_modifier) * 3.2f);
+        this_mo.SetRotationFromFacing(flyFace);
+        g_flying_mod_old_fly_face = normalize(flatten(this_mo.velocity));
     }
 
     // Reduces movement control after wall flip
