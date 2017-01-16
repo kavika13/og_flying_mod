@@ -87,8 +87,10 @@ class JumpInfo {
         if(hit_wall){
             hit_wall = false;
             this_mo.SetRotationFromFacing(wall_run_facing);
-            // FLYING MOD - has_hit_wall updated to enable regaining wall contact after fall
-            has_hit_wall = false;
+            if (g_flying_mod_is_flying_active) {
+                // FLYING MOD - has_hit_wall updated to enable regaining wall contact after fall
+                has_hit_wall = false;
+            }
         }
     }
 
@@ -109,7 +111,7 @@ class JumpInfo {
         this_mo.rigged_object().anim_client().SetBlendCoord("tuck_coord",flip_info.GetTuck());
 
         // FLYING MOD - Avoid flailiing ruining flying animations
-        if (g_flying_mod_flying_mode == 0) {
+        if (!g_flying_mod_is_flying_active || g_flying_mod_flying_mode == 0) {
             this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
         }
 
@@ -119,7 +121,9 @@ class JumpInfo {
         }
 
         // FLYING MOD - prevent animation
-        // this_mo.SetCharAnimation("jump",20.0f,flags);
+        if (!g_flying_mod_is_flying_active) {
+            this_mo.SetCharAnimation("jump",20.0f,flags);
+        }
 
         this_mo.rigged_object().ik_enabled = false;
     }
@@ -242,7 +246,9 @@ class JumpInfo {
         }
 
         // FLYING MOD
-        UpdateFlying(ts);
+        if (g_flying_mod_is_flying_active) {
+            UpdateFlying(ts);
+        }
 
         if(!hit_wall){
             if(WantsToFlip()){
@@ -272,9 +278,12 @@ class JumpInfo {
             ledge_delay -= ts.step();
             if(!follow_jump_path){
                 // FLYING MOD
-                SetJumpVelocity(ts);
-                // vec3 target_velocity = GetTargetVelocity();
-                // this_mo.velocity += target_velocity * _air_control * ts.step();
+                if (g_flying_mod_is_flying_active) {
+                    SetJumpVelocity(ts);
+                } else {
+                    vec3 target_velocity = GetTargetVelocity();
+                    this_mo.velocity += target_velocity * _air_control * ts.step();                    
+                }
             }
         }
 
@@ -321,8 +330,10 @@ class JumpInfo {
             jump_vel = GetJumpVelocity(target_velocity, ground_normal);
 
             // FLYING MOD - Reduced initial velocity
-            jump_vel.x *= 0.8f;
-            jump_vel.z *= 0.8f;
+            if (g_flying_mod_is_flying_active) {
+                jump_vel.x *= 0.8f;
+                jump_vel.z *= 0.8f;
+            }
         }
         this_mo.velocity = jump_vel;
 		if(this_mo.controlled){
