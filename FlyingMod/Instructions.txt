@@ -1,15 +1,21 @@
 # og_flying_mod
 Flying Mod for Overgrowth
 
-[Here's the updated A227 version](https://github.com/kavika13/og_flying_mod/releases/tag/A227)
+[Beta 3 version](https://github.com/kavika13/og_flying_mod/releases/tag/b3)
 
-[Here's the original A198 version](http://forums.wolfire.com/viewtopic.php?f=16&t=17020)
+[Beta 2 version](https://github.com/kavika13/og_flying_mod/releases/tag/b2)
+
+[Beta 1 version](https://github.com/kavika13/og_flying_mod/releases/tag/b1)
+
+[Alpha 227 version](https://github.com/kavika13/og_flying_mod/releases/tag/a227)
+
+[The original A198 version](http://forums.wolfire.com/viewtopic.php?f=16&t=17020)
 
 Originally made by [CryptoSeven](http://forums.wolfire.com/memberlist.php?mode=viewprofile&u=59031)
 
 Update by [merlyn](http://forums.wolfire.com/memberlist.php?mode=viewprofile&u=121768)
 
-##Installation:
+## Installation:
 
 _Short version is copypasting `/FlyingMod` folder and its content into game `/Mods` folder._
 
@@ -25,7 +31,7 @@ _Short version is copypasting `/FlyingMod` folder and its content into game `/Mo
 If you have other mods installed that contain `aircontrols.as` or `aschar.as`,
 then you might have to uninstall those mods before installing this mod.
 
-##Controls:
+## Controls:
 
 - <kbd>f</kbd> key toggles flight on or off.
 

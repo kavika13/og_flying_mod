@@ -1,20 +1,21 @@
 <? xml version="1.0" ?>
 <Mod>
-    <!-- The ID is necessary and should never change between versions of the same mod -->
-    <!-- The id can consist of english alphabet or dash "-" -->
     <Id>flying-mod</Id>
-    <!-- The human readable name is presented in UI's -->
     <Name>Flying Mod</Name>
-    <!-- Version number, can have any formatting you wish. Can consists of numbers english alphabet, "." or "-" -->
+
+    <Category>Script</Category>
+
+    <Thumbnail>Data/Images/flying_mod/thumb.jpg</Thumbnail>
+    <PreviewImage>Data/Images/flying_mod/thumb.jpg</PreviewImage>
+
+    <Description>Ahh, the pleasant sensation of surfing the aether. Who am I to restrict anthropomorphs from such delight? He might have crashed a few times but eventually we got there</Description>
     <Version>1.0.0</Version>
-    <!-- Your immortal stamp -->
     <Author>CryptoSeven</Author>
 
-    <!-- Specification for which version of the game that is supported. It's possible to specify more than one -->
-    <SupportedVersion>b2</SupportedVersion>
-    <!-- Indicate that mod is compatible with __ALL__ versions of overgrowth, use with care, especially with script mods -->
-    <!-- <SupportedVersion>*</SupportedVersion> -->
+    <Tag>Movement</Tag>
+    <Tag>Script</Tag>
+    <Tag>Animation</Tag>
 
-    <!-- Indicate whether or not the game needs to restart for the mod to function properly -->
-    <NeedsRestart>false<NeedsRestart>
+    <SupportedVersion>b3</SupportedVersion>
+    <NeedsRestart>false</NeedsRestart>
 </Mod>
