@@ -70,7 +70,7 @@ class JumpInfo {
             }
 
             // FLYING MOD
-            if(flyingActive) {
+            if(g_flying_mod_is_flying_active) {
                 WallCrash();
             }
         }
@@ -110,7 +110,7 @@ class JumpInfo {
         this_mo.rigged_object().anim_client().SetBlendCoord("tuck_coord",flip_info.GetTuck());
 
         // FLYING MOD - Avoid flailiing ruining flying animations
-        if(flyingMode == 0) {
+        if(g_flying_mod_flying_mode == 0) {
             this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
         }
 
@@ -219,8 +219,8 @@ class JumpInfo {
             flip_info.StartWallFlip(wall_dir * -1.0f);
 
             // FLYING MOD - Resets timer for new wall flip
-            wall_flip_time = 0.0f;
-            after_wall_flip = true;
+            g_flying_mod_wall_flip_time = 0.0f;
+            g_flying_mod_after_wall_flip = true;
         }
     }
 
