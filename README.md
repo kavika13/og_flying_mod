@@ -1,7 +1,9 @@
 # og_flying_mod
 Flying Mod for Overgrowth
 
-[Here's the updated Beta 1 version](https://github.com/kavika13/og_flying_mod/releases/tag/b1)
+[Here's the updated Beta 2 version](https://github.com/kavika13/og_flying_mod/releases/tag/b2)
+
+[Here's the Beta 1 version](https://github.com/kavika13/og_flying_mod/releases/tag/b1)
 
 [Here's the original A198 version](http://forums.wolfire.com/viewtopic.php?f=16&t=17020)
 
