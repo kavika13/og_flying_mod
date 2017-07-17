@@ -1,11 +1,13 @@
 # og_flying_mod
 Flying Mod for Overgrowth
 
-A198 version available at http://forums.wolfire.com/viewtopic.php?f=16&t=17020
+[Here's the updated A227 version](https://github.com/kavika13/og_flying_mod/releases/tag/A227)
+
+[Here's the original A198 version](http://forums.wolfire.com/viewtopic.php?f=16&t=17020)
 
 Originally made by [CryptoSeven](http://forums.wolfire.com/memberlist.php?mode=viewprofile&u=59031)
 
-Update by [kavika](http://forums.wolfire.com/memberlist.php?mode=viewprofile&u=121768)
+Update by [merlyn](http://forums.wolfire.com/memberlist.php?mode=viewprofile&u=121768)
 
 ##Installation:
 
@@ -37,5 +39,5 @@ then you might have to uninstall those mods before installing this mod.
   You get one dash per flight but can reactivate it by wall jumping or killing enemies.
 
 - While gliding you can grab enemies.
-  Make sure to have enough speed and swoop in on them holding `rmb` (Speed requirement disabled in video below).
+  Make sure to have enough speed and swoop in on them holding `rmb`.
   Hold <kbd>space</kbd> and `rmb` if you want to glide without grabbing nearby enemies.
