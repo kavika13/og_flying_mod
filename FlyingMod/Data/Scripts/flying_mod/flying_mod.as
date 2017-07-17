@@ -176,13 +176,13 @@ void FlyingAttacks() {
         target_id = air_attack_id;
         MovementObject @char = ReadCharacterID(target_id);
         vec3 start = this_mo.position;
-        vec3 end = char.GetAvgIKChainPos("torso");
+        vec3 end = char.rigged_object().GetAvgIKChainPos("torso");
         PlaySound("Data/Sounds/ambient/amb_canyon_rock_1.wav", this_mo.position);
         vec3 force = normalize(char.position - this_mo.position) * 40000.0f;
         force.y += 1000.0f;
         char.Execute(
             "vec3 impulse = vec3(" + force.x + ", " + force.y + ", " + force.z + ");" +
-            "HandleRagdollImpactImpulse(impulse, this_mo.GetAvgIKChainPos(\"torso\"), 5.0f);" +
+            "HandleRagdollImpactImpulse(impulse, this_mo.rigged_object().GetAvgIKChainPos(\"torso\"), 5.0f);" +
             "ragdoll_limp_stun = 1.0f;" +
             "recovery_time = 2.0f;");
     } else if(WantsToGrabLedge() && !WantsToJump() && g_flying_mod_air_dash < 1 && length(this_mo.velocity) > 20.0f
@@ -289,7 +289,7 @@ void FlyingStuff(const Timestep& in ts) {
             drag_target = this_mo.position + this_mo.velocity * 0.02f;
 
             for(int i = 0; i < 25; i++) {
-                char.MoveRagdollPart(drag_body_part, drag_target, 100);
+                char.rigged_object().MoveRagdollPart(drag_body_part, drag_target, 100);
             }
         } else if(on_ground_time < 1.0f) {
             UnTether();
@@ -315,14 +315,14 @@ void FlyingStuff(const Timestep& in ts) {
 
         MovementObject@ char = ReadCharacterID(tether_id);
         vec3 arm_pos = GetDragOffsetWorld();
-        vec3 head_pos = char.GetIKChainPos(drag_body_part, drag_body_part_id);
+        vec3 head_pos = char.rigged_object().GetIKChainPos(drag_body_part, drag_body_part_id);
         vec3 arm_pos_flat = vec3(arm_pos.x, 0.0f, arm_pos.z);
         vec3 head_pos_flat = vec3(head_pos.x, 0.0f, head_pos.z);
         float dist = distance(arm_pos_flat, head_pos_flat);
 
         if(drag_strength_mult > 0.3f) {
             drag_target = mix(arm_pos, drag_target, pow(0.95f, ts.frames()));
-            char.MoveRagdollPart(drag_body_part, drag_target, drag_strength_mult);
+            char.rigged_object().MoveRagdollPart(drag_body_part, drag_target, drag_strength_mult);
         } else {
             drag_target = head_pos;
         }
@@ -440,7 +440,7 @@ void printvec(vec3 vec) {
 
 // Sparkle effects when air dashing
 void SpinSpark() {
-    vec3 com = this_mo.GetCenterOfMass();
+    vec3 com = this_mo.rigged_object().skeleton().GetCenterOfMass();
 
     vec3 tempaxis = flip_info.flip_axis;
     // Rotated 90 degrees left
