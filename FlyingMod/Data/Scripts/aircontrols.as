@@ -63,7 +63,11 @@ class JumpInfo {
             return;
         }
         if(!ledge_info.on_ledge){
-            this_mo.MaterialEvent("leftwallstep", this_mo.position+dir*_leg_sphere_size);
+            if(character_getter.GetTag("species") == "cat"){
+                this_mo.MaterialEvent("leftwallstep", this_mo.position+dir*_leg_sphere_size, 0.5f);
+            } else {
+                this_mo.MaterialEvent("leftwallstep", this_mo.position+dir*_leg_sphere_size);                
+            }
 
             // FLYING MOD
             if(flyingActive) {
@@ -102,12 +106,12 @@ class JumpInfo {
         up_coord += 0.5f;
         float flailing = GetFlailingAmount();
         flailing = min(0.6f+sin(time*2.0f)*0.2f,flailing);
-        this_mo.SetBlendCoord("up_coord",up_coord);
-        this_mo.SetBlendCoord("tuck_coord",flip_info.GetTuck());
+        this_mo.rigged_object().anim_client().SetBlendCoord("up_coord",up_coord);
+        this_mo.rigged_object().anim_client().SetBlendCoord("tuck_coord",flip_info.GetTuck());
 
         // FLYING MOD - Avoid flailiing ruining flying animations
         if(flyingMode == 0) {
-            this_mo.SetBlendCoord("flail_coord", flailing);
+            this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
         }
 
         int8 flags = 0;
@@ -118,7 +122,7 @@ class JumpInfo {
         // FLYING MOD - prevent animation
         // this_mo.SetCharAnimation("jump",20.0f,flags);
 
-        this_mo.SetIKEnabled(false);
+        this_mo.rigged_object().ik_enabled = false;
     }
 
     void UpdateWallRunAnimation() {
@@ -128,9 +132,9 @@ class JumpInfo {
         wall_right.z = temp;
         float speed = length(this_mo.velocity);
         this_mo.SetCharAnimation("wall",5.0f);
-        this_mo.SetBlendCoord("ground_speed",speed);
-        this_mo.SetBlendCoord("speed_coord",speed*0.25f);
-        this_mo.SetBlendCoord("dir_coord",dot(normalize(this_mo.velocity), wall_right));
+        this_mo.rigged_object().anim_client().SetBlendCoord("ground_speed",speed);
+        this_mo.rigged_object().anim_client().SetBlendCoord("speed_coord",speed*0.25f);
+        this_mo.rigged_object().anim_client().SetBlendCoord("dir_coord",dot(normalize(this_mo.velocity), wall_right));
         vec3 flat_vel = this_mo.velocity;
         flat_vel.y = 0.0f;
         wall_run_facing = normalize(this_mo.GetFacing() + flat_vel*0.25f);
@@ -145,23 +149,10 @@ class JumpInfo {
         ApplyIdle(5.0f, true);
     }
 
-    void UpdateIKTargets() {
-        if(ledge_info.on_ledge){
-            ledge_info.UpdateIKTargets();
-        } else {            
-            vec3 no_offset(0.0f);
-            this_mo.SetIKTargetOffset("leftarm",no_offset);
-            this_mo.SetIKTargetOffset("rightarm",no_offset);
-            this_mo.SetIKTargetOffset("left_leg",no_offset);
-            this_mo.SetIKTargetOffset("right_leg",no_offset);
-            this_mo.SetIKTargetOffset("full_body",no_offset);
-        }
-    }
-
     void UpdateAirAnimation() {
         if(ledge_info.on_ledge){
             ledge_info.UpdateLedgeAnimation();
-        } else if(hit_wall){
+        } else if(hit_wall && !flip_info.IsFlipping()){
             UpdateWallRunAnimation();
         } else {
             UpdateFreeAirAnimation();
@@ -218,10 +209,12 @@ class JumpInfo {
             SetFacingFromWallDir();
         }
         if(WantsToJumpOffWall()){
+            AchievementEvent("jump_off_wall");
             StartWallJump(wall_dir * -1.0f);
         }
         
         if(WantsToFlipOffWall()){
+            AchievementEvent("wall_flip");
             StartWallJump(wall_dir * -1.0f);
             flip_info.StartWallFlip(wall_dir * -1.0f);
 
@@ -264,7 +257,7 @@ class JumpInfo {
             UpdateWallRun(ts);
         }
 
-        if(WantsToGrabLedge() && (ledge_info.on_ledge || ledge_delay <= 0.0f)){
+        if(WantsToGrabLedge() && (ledge_info.on_ledge || ledge_delay <= 0.0f) && !flip_info.IsFlipping()){
             ledge_info.CheckLedges();
             if(ledge_info.on_ledge){
                 has_hit_wall = false;
@@ -297,13 +290,19 @@ class JumpInfo {
         LostWallContact();
         StartFall();
 
-        vec3 jump_vel = GetJumpVelocity(target_velocity);
+        vec3 jump_vel = GetJumpVelocity(target_velocity, vec3(0.0, 1.0, 0.0));
         this_mo.velocity = jump_vel * 0.5f;
         jetpack_fuel = _jump_fuel;
         jump_launch = 1.0f;
         down_jetpack_fuel = _jump_fuel * 0.5f;
         
-        this_mo.MaterialEvent("jump",this_mo.position + wall_dir * _leg_sphere_size);
+
+        if(character_getter.GetTag("species") == "cat"){
+            this_mo.MaterialEvent("jump",this_mo.position + wall_dir * _leg_sphere_size, 0.5f);
+        } else {
+            this_mo.MaterialEvent("jump",this_mo.position + wall_dir * _leg_sphere_size);
+        }
+        AISound(this_mo.position, QUIET_SOUND_RADIUS, _sound_type_foley);
         this_mo.velocity += old_vel_flat;
         tilt = this_mo.velocity * 5.0f;
     }
@@ -320,19 +319,34 @@ class JumpInfo {
             jump_vel = target_velocity;
             target_velocity = vec3(target_velocity.x, 0.0f, target_velocity.z);
         } else {
-            jump_vel = GetJumpVelocity(target_velocity);
+            jump_vel = GetJumpVelocity(target_velocity, ground_normal);
 
             // FLYING MOD - Reduced initial velocity
             jump_vel.x *= 0.8f;
             jump_vel.z *= 0.8f;
         }
         this_mo.velocity = jump_vel;
+		if(this_mo.controlled){
+			AchievementEvent("player_jumped");
+		}else{
+			AchievementEvent("ai_jumped");
+		}
+		
         //Print("Start jump: "+this_mo.velocity.y+"\n");
         jetpack_fuel = _jump_fuel;
+        if(character_getter.GetTag("species") != "rabbit"){
+            jetpack_fuel *= 0.2f;
+            this_mo.velocity.y *= 0.6f;
+        }
         jump_launch = 1.0f;
         down_jetpack_fuel = _jump_fuel*0.5f;
         
-        this_mo.MaterialEvent("jump",this_mo.position - vec3(0.0f, _leg_sphere_size, 0.0f));
+        if(character_getter.GetTag("species") == "cat"){
+            this_mo.MaterialEvent("jump",this_mo.position - vec3(0.0f, _leg_sphere_size, 0.0f), 0.5f);
+        } else {
+            this_mo.MaterialEvent("jump",this_mo.position - vec3(0.0f, _leg_sphere_size, 0.0f));
+        }
+        AISound(this_mo.position, QUIET_SOUND_RADIUS, _sound_type_foley);
         
         if(length(target_velocity)>0.4f){
             this_mo.SetRotationFromFacing(target_velocity);
@@ -349,20 +363,16 @@ class JumpInfo {
         has_hit_wall = false;
         flip_info.StartedJump();
         ledge_delay = 0.0f;
-
-        this_mo.SetIKTargetOffset("left_leg",vec3(0.0f));
-        this_mo.SetIKTargetOffset("right_leg",vec3(0.0f));
-        this_mo.SetIKTargetOffset("full_body",vec3(0.0f));
     }
 
     // adjusts the velocity of jumps and wall jumps based on ground_normal
-    vec3 GetJumpVelocity(vec3 target_velocity){
+    vec3 GetJumpVelocity(vec3 target_velocity, vec3 temp_ground_normal){
         vec3 jump_vel = target_velocity * run_speed;
         jump_vel.y = _jump_vel;
 
         vec3 jump_dir = normalize(jump_vel);
-        if(dot(jump_dir, ground_normal) < 0.3f){
-            vec3 ground_up = ground_normal;
+        if(dot(jump_dir, temp_ground_normal) < 0.3f){
+            vec3 ground_up = temp_ground_normal;
             vec3 ground_front = target_velocity;
             if(length_squared(ground_front) == 0){
                 ground_front = vec3(0,0,1);
