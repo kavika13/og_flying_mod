@@ -4,6 +4,8 @@ string gliding = "grab";
 
 bool g_flying_mod_is_flying_active = false;
 int g_flying_mod_flying_mode = 0;
+string g_flying_mod_toggle_flying_key = "f";
+
 float g_flying_mod_flap_counter = 1.0f;
 float g_flying_mod_flap_modifier = 0.3f;
 float g_flying_mod_tilt_modifier = 1.0f;  // TODO: Should this be shared with other scripts? Does A227 update this definition?
@@ -17,7 +19,73 @@ float g_flying_mod_wall_flip_time = 0.0f;
 const int _FLYING_MOD_TETHERED_SWOOP = -1;
 float g_flying_mod_air_control_extra = _air_control * 4.0f;  // _air_control defined in aircontrol.as
 
-void FlyingMode() {
+void FlyingModInit() {
+    Log(info, "FlyingModInit() executed");
+
+    // register aschar hooks
+    character_update_state_before_per_state_update_mod_hooks.insertLast(@FlyingModCharacterUpdateStateBeforePerStateUpdate);
+    character_update_movement_controls_before_update_air_attack_controls_mod_hooks.insertLast(@FlyingModCharacterUpdateMovementControlsBeforeUpdateAirAttackControls);
+    character_handle_air_collisions_before_landing_mod_hooks.insertLast(@FlyingModHandleAirCollisionsBeforeLanding);
+
+    // register aircontrols hooks
+    jump_info_hit_wall_on_hit_wall_detected_mod_hooks.insertLast(@FlyingModJumpInfoHitWallOnHitWallDetected);
+    jump_info_lost_wall_contact_on_lost_wall_contact_detected_mod_hooks.insertLast(@FlyingModJumpInfoLostWallContactOnLostWallContactDetected);
+    jump_info_update_free_air_animation_on_set_flailing_animation_mod_hooks.insertLast(@FlyingModJumpInfoUpdateFreeAirAnimationOnSetFlailingAnimation);
+    jump_info_update_free_air_animation_on_set_jump_animation_mod_hooks.insertLast(@FlyingModJumpInfoUpdateFreeAirAnimationOnSetJumpAnimation);
+    jump_info_update_wall_run_on_wants_to_flip_off_wall_mod_hooks.insertLast(@FlyingModJumpInfoUpdateWallRunOnWantsToFlipOffWall);
+    jump_info_update_air_controls_after_set_jetpack_velocity_mod_hooks.insertLast(@FlyingModJumpInfoUpdateAirControlsAfterSetJetpackVelocity);
+    jump_info_update_air_controls_before_set_jump_velocity_mod_hooks.insertLast(@FlyingModJumpInfoUpdateAirControlsBeforeSetJumpVelocity);
+    jump_info_start_jump_after_get_non_path_jump_velocity_mod_hooks.insertLast(@FlyingModJumpInfoStartJumpAfterGetNonPathJump);
+
+    // bind mod controls
+    lightning_key = "g";  // TODO: Register for mod based binding, once supported
+}
+
+void FlyingModCharacterUpdateMovementControlsBeforeUpdateAirAttackControls() {
+    if (g_flying_mod_is_flying_active) {
+        g_mod_character_should_skip_update_air_attack_controls_once = true;
+    }
+}
+
+void FlyingModHandleAirCollisionsBeforeLanding() {
+    if(g_flying_mod_air_dash > 0) {
+        g_mod_character_should_skip_air_collision_landing_once = true;
+        this_mo.velocity.y *=- 1.0f;
+    }
+}
+
+void FlyingModJumpInfoLostWallContactOnLostWallContactDetected() {
+    if(g_flying_mod_is_flying_active) {
+        // has_hit_wall updated to enable regaining wall contact after fall
+        jump_info.has_hit_wall = false;
+    }
+}
+
+void FlyingModJumpInfoUpdateFreeAirAnimationOnSetFlailingAnimation() {
+    if(g_flying_mod_is_flying_active && g_flying_mod_flying_mode != 0) {
+        g_mod_character_should_skip_free_air_flailing_animation_once = true;
+    }        
+}
+
+void FlyingModJumpInfoUpdateFreeAirAnimationOnSetJumpAnimation() {
+    if(g_flying_mod_is_flying_active) {
+        g_mod_character_should_skip_free_air_jump_animation_once = true;
+    }
+}
+
+void FlyingModJumpInfoUpdateWallRunOnWantsToFlipOffWall() {
+    g_flying_mod_wall_flip_time = 0.0f;
+    g_flying_mod_after_wall_flip = true;        
+}
+
+void FlyingModJumpInfoStartJumpAfterGetNonPathJump(vec3 &inout jump_vel) {
+    if(g_flying_mod_is_flying_active) {
+        jump_vel.x *= 0.8f;
+        jump_vel.z *= 0.8f;
+    }
+}
+
+void FlyingModFlyingMode() {
     if(GetInputDown(this_mo.controller_id, flapping) && this_mo.controlled) {
         // Flapping
         g_flying_mod_flying_mode = 1;
@@ -30,17 +98,21 @@ void FlyingMode() {
     }
 }
 
-void UpdateFlying(const Timestep& in ts) {
-    FlyingMode();
-    FlyingAttacks();
-    FlyingAnimations();
-    AirDash();
-    CheckForSwoopDrag();
+void FlyingModJumpInfoUpdateAirControlsAfterSetJetpackVelocity(const Timestep& in ts) {
+    if(!g_flying_mod_is_flying_active) {
+        return;
+    }
+
+    FlyingModFlyingMode();
+    FlyingModFlyingAttacks();
+    FlyingModFlyingAnimations();
+    FlyingModAirDash();
+    FlyingModCheckForSwoopDrag();
 
     if(g_flying_mod_flying_mode == 1) {
         // Flapping
         float tempY = this_mo.velocity.y;
-        this_mo.velocity = NewDirection(GetTargetVelocity(), 0.01f);
+        this_mo.velocity = FlyingModNewDirection(GetTargetVelocity(), 0.01f);
         this_mo.velocity.y = tempY;
         g_flying_mod_flap_counter += g_flying_mod_flap_modifier;
 
@@ -73,7 +145,7 @@ void UpdateFlying(const Timestep& in ts) {
 
         if(g_flying_mod_flying_mode == 2) {
             // Gliding
-            this_mo.velocity = NewDirection(camera.GetFacing(), 0.03f);
+            this_mo.velocity = FlyingModNewDirection(camera.GetFacing(), 0.03f);
 
             if(this_mo.velocity.y > 0) {
                 if(air_time > 2.0f) {
@@ -153,7 +225,7 @@ void UpdateFlying(const Timestep& in ts) {
     }
 }
 
-void FlyingAttacks() {
+void FlyingModFlyingAttacks() {
     int air_attack_id = -1;
 
     if(WantsToDragBody() || g_flying_mod_air_dash > 0) {
@@ -201,7 +273,7 @@ void FlyingAttacks() {
     }
 }
 
-void FlyingAnimations() {
+void FlyingModFlyingAnimations() {
     if(!jump_info.hit_wall) {
         if(g_flying_mod_flying_mode == 1 && g_flying_mod_air_dash < 1) {
             // Flapping
@@ -224,7 +296,7 @@ void FlyingAnimations() {
     }
 }
 
-void AirDash() {
+void FlyingModAirDash() {
     if(jump_info.hit_wall || air_time < 0.1f) {
         g_flying_mod_has_air_dash = true;
     }
@@ -251,13 +323,13 @@ void AirDash() {
             }
 
             for(int i = 0; i < 3; i++) {
-                SpinSpark();
+                FlyingModSpinSpark();
             }
         }
     }
 }
 
-void FlyingStuff(const Timestep& in ts) {
+void FlyingModCharacterUpdateStateBeforePerStateUpdate(const Timestep& in ts) {
     // Toggle flying
     if(this_mo.controlled && GetInputPressed(this_mo.controller_id, g_flying_mod_toggle_flying_key)) {
         if(g_flying_mod_is_flying_active) {
@@ -346,7 +418,11 @@ void FlyingStuff(const Timestep& in ts) {
     }
 }
 
-void WallCrash() {
+void FlyingModJumpInfoHitWallOnHitWallDetected() {
+    if(!g_flying_mod_is_flying_active) {
+        return;
+    }
+
     vec3 closest_point;
     float closest_dist = -1.0f;
 
@@ -370,7 +446,13 @@ void WallCrash() {
     g_flying_mod_air_dash = 0;
 }
 
-void SetJumpVelocity(const Timestep& in ts) {
+void FlyingModJumpInfoUpdateAirControlsBeforeSetJumpVelocity(const Timestep& in ts) {
+    if(g_flying_mod_is_flying_active) {
+        g_mod_character_should_skip_air_controls_set_jump_velocity_once = true;
+    } else {
+        return;
+    }
+
     vec3 target_velocity = GetTargetVelocity();
 
     // Reduces movement control after wall flip and reduces acceleration over velocity limit
@@ -401,7 +483,7 @@ void SetJumpVelocity(const Timestep& in ts) {
     }
 }
 
-void CheckForSwoopDrag() {
+void FlyingModCheckForSwoopDrag() {
     // FLYING MOD No body drag when air dashing or holding jump
     if(tethered == _TETHERED_FREE && this_mo.controlled && WantsToDragBody() && !WantsToJump() && g_flying_mod_air_dash < 1) {
         int closest_id = GetClosestCharacterID(2.0f, _TC_RAGDOLL | _TC_UNCONSCIOUS);
@@ -421,7 +503,7 @@ void CheckForSwoopDrag() {
 }
 
 // Change direction without speed loss
-vec3 NewDirection(vec3 newdir, float direction_modifier) {
+vec3 FlyingModNewDirection(vec3 newdir, float direction_modifier) {
     vec3 old_dir = normalize(this_mo.velocity);
     float len = length(this_mo.velocity);
     vec3 new_dir = normalize(newdir);
@@ -431,13 +513,8 @@ vec3 NewDirection(vec3 newdir, float direction_modifier) {
     return new_dir;
 }
 
-// Print vector
-void printvec(vec3 vec) {
-    Print("\nx: " + vec.x + "   y: " + vec.y + "   z: " + vec.z);
-}
-
 // Sparkle effects when air dashing
-void SpinSpark() {
+void FlyingModSpinSpark() {
     vec3 com = this_mo.rigged_object().skeleton().GetCenterOfMass();
 
     vec3 tempaxis = flip_info.flip_axis;

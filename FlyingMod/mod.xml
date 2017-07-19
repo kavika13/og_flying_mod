@@ -1,7 +1,7 @@
 <? xml version="1.0" ?>
 <Mod>
-    <Id>flying-mod</Id>
-    <Name>Flying Mod</Name>
+    <Id>flying-mod-powerstrip</Id>
+    <Name>Flying Mod (PowerStrip)</Name>
 
     <Category>Script</Category>
 

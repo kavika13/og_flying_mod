@@ -1,7 +1,19 @@
 #include "interpdirection.as"
 #include "aschar_aux.as"
 #include "aircontrols.as"
+#include "power_strip/aschar_mods.as"
 
+// Mod variables for controlling character script
+bool g_mod_character_should_skip_update_air_attack_controls_once = false;
+bool g_mod_character_should_skip_air_collision_landing_once = false;
+
+funcdef void MODHOOKCALLBACK();
+funcdef void MODHOOKCALLBACKTS(const Timestep &in ts);
+array<MODHOOKCALLBACKTS@> character_update_state_before_per_state_update_mod_hooks;
+array<MODHOOKCALLBACK@> character_update_movement_controls_before_update_air_attack_controls_mod_hooks;
+array<MODHOOKCALLBACK@> character_handle_air_collisions_before_landing_mod_hooks;
+
+// Back to non-mod script
 enum WalkDir {WALK_BACKWARDS, STRAFE, FORWARDS};
 
 AttackScriptGetter attack_getter;
@@ -2668,8 +2680,7 @@ string limp_ragdoll_key = "m";
 string recover_key = "x";
 string path_key = "p";
 string scream_key = "v";
-string lightning_key = "g";  // FLYING MOD uses f key
-string g_flying_mod_toggle_flying_key = "f";
+string lightning_key = "f";
 string combat_rabbit_key = "1";
 string civ_rabbit_key = "2";
 string cat_key = "3";
@@ -3144,8 +3155,12 @@ void UpdateState(const Timestep &in ts) {
     UpdateThreatAmount(ts);
     UpdateIdleType();
 
-    // FLYING MOD
-    FlyingStuff(ts);
+    // Call into mods
+    for(uint i = 0; i < character_update_state_before_per_state_update_mod_hooks.length(); i++) {
+        if(!(character_update_state_before_per_state_update_mod_hooks[i] is null)) {
+            character_update_state_before_per_state_update_mod_hooks[i](ts);
+        }
+    }
 
     switch(state){
     case _movement_state:
@@ -6420,10 +6435,17 @@ void UpdateMovementControls(const Timestep &in ts) {
     } else {
         jump_info.UpdateAirControls(ts);
 
-        // FLYING MOD
-        if (!g_flying_mod_is_flying_active) {
+        // Call into mods
+        for(uint i = 0; i < character_update_movement_controls_before_update_air_attack_controls_mod_hooks.length(); i++) {
+            if(!(character_update_movement_controls_before_update_air_attack_controls_mod_hooks[i] is null)) {
+                character_update_movement_controls_before_update_air_attack_controls_mod_hooks[i]();
+            }
+        }
+
+        if(!g_mod_character_should_skip_update_air_attack_controls_once) {
             UpdateAirAttackControls();
         }
+        g_mod_character_should_skip_update_air_attack_controls_once = false;
 
         if(jump_info.ClimbedUp()){
             SetOnGround(true);
@@ -7191,9 +7213,15 @@ void HandleAirCollisions(const Timestep &in ts) {
         }
     }
     if(landing){
-        // FLYING MOD - bounce if air dash
-        if(g_flying_mod_air_dash > 0) {
-            this_mo.velocity.y *=- 1.0f;
+        // Call into mods
+        for(uint i = 0; i < character_handle_air_collisions_before_landing_mod_hooks.length(); i++) {
+            if(!(character_handle_air_collisions_before_landing_mod_hooks[i] is null)) {
+                character_handle_air_collisions_before_landing_mod_hooks[i]();
+            }
+        }
+
+        if(g_mod_character_should_skip_air_collision_landing_once) {
+            g_mod_character_should_skip_air_collision_landing_once = false;
             return;
         }
 
@@ -9179,6 +9207,8 @@ void Init(string character_path) {
 
 void ScriptSwap() {
     last_col_pos = this_mo.position;
+    // Call into mods
+    PowerStripInit();
 }
 
 void Reset() {
@@ -9246,6 +9276,8 @@ void PostReset() {
     for(int i=0; i<kMaxSplash; ++i){
         splash_ids[i] = -1;
     }
+    // Call into mods
+    PowerStripInit();
 }
 
 bool in_water = false;

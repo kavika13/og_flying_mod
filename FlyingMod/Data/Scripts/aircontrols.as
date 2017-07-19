@@ -1,7 +1,22 @@
 #include "fliproll.as"
 #include "ledgegrab.as"
-#include "flying_mod/flying_mod.as"
 
+// Mod variables for controlling character script
+bool g_mod_character_should_skip_free_air_flailing_animation_once = false;
+bool g_mod_character_should_skip_free_air_jump_animation_once = false;
+bool g_mod_character_should_skip_air_controls_set_jump_velocity_once = false;
+
+funcdef void MODHOOKCALLBACKCHANGEVEC3(vec3 &inout value);
+array<MODHOOKCALLBACK@> jump_info_hit_wall_on_hit_wall_detected_mod_hooks;
+array<MODHOOKCALLBACK@> jump_info_lost_wall_contact_on_lost_wall_contact_detected_mod_hooks;
+array<MODHOOKCALLBACK@> jump_info_update_free_air_animation_on_set_flailing_animation_mod_hooks;
+array<MODHOOKCALLBACK@> jump_info_update_free_air_animation_on_set_jump_animation_mod_hooks;
+array<MODHOOKCALLBACK@> jump_info_update_wall_run_on_wants_to_flip_off_wall_mod_hooks;
+array<MODHOOKCALLBACKTS@> jump_info_update_air_controls_after_set_jetpack_velocity_mod_hooks;
+array<MODHOOKCALLBACKTS@> jump_info_update_air_controls_before_set_jump_velocity_mod_hooks;
+array<MODHOOKCALLBACKCHANGEVEC3@> jump_info_start_jump_after_get_non_path_jump_velocity_mod_hooks;
+
+// Back to non-mod script
 const float _jump_fuel_burn = 10.0f; // multiplier for amount of fuel lost per time_step
 const float _jump_fuel = 5.0f; // used to set the amount of fuel available at the start of a jump
 const float _air_control = 3.0f; // multiplier for the amount of directional control available while in the air
@@ -71,9 +86,11 @@ class JumpInfo {
                 this_mo.MaterialEvent("leftwallstep", this_mo.position+dir*_leg_sphere_size);                
             }
 
-            // FLYING MOD
-            if(g_flying_mod_is_flying_active) {
-                WallCrash();
+            // Call into mods
+            for(uint i = 0; i < jump_info_hit_wall_on_hit_wall_detected_mod_hooks.length(); i++) {
+                if(!(jump_info_hit_wall_on_hit_wall_detected_mod_hooks[i] is null)) {
+                    jump_info_hit_wall_on_hit_wall_detected_mod_hooks[i]();
+                }
             }
         }
 
@@ -90,9 +107,11 @@ class JumpInfo {
             hit_wall = false;
             this_mo.SetRotationFromFacing(wall_run_facing);
 
-            if(g_flying_mod_is_flying_active) {
-                // FLYING MOD - has_hit_wall updated to enable regaining wall contact after fall
-                has_hit_wall = false;
+            // Call into mods
+            for(uint i = 0; i < jump_info_lost_wall_contact_on_lost_wall_contact_detected_mod_hooks.length(); i++) {
+                if(!(jump_info_lost_wall_contact_on_lost_wall_contact_detected_mod_hooks[i] is null)) {
+                    jump_info_lost_wall_contact_on_lost_wall_contact_detected_mod_hooks[i]();
+                }
             }
         }
     }
@@ -113,20 +132,34 @@ class JumpInfo {
         this_mo.rigged_object().anim_client().SetBlendCoord("up_coord",up_coord);
         this_mo.rigged_object().anim_client().SetBlendCoord("tuck_coord",max(flip_info.GetTuck(), tuck_override));
 
-        // FLYING MOD - Avoid flailiing ruining flying animations
-        if(!g_flying_mod_is_flying_active || g_flying_mod_flying_mode == 0) {
+        // Call into mods
+        for(uint i = 0; i < jump_info_update_free_air_animation_on_set_flailing_animation_mod_hooks.length(); i++) {
+            if(!(jump_info_update_free_air_animation_on_set_flailing_animation_mod_hooks[i] is null)) {
+                jump_info_update_free_air_animation_on_set_flailing_animation_mod_hooks[i]();
+            }
+        }
+
+        if(!g_mod_character_should_skip_free_air_flailing_animation_once) {
             this_mo.rigged_object().anim_client().SetBlendCoord("flail_coord",flailing);
         }
+        g_mod_character_should_skip_free_air_flailing_animation_once = false;
 
         int8 flags = 0;
         if(left_foot_jump){
             flags = _ANM_MIRRORED;
         }
 
-        // FLYING MOD - prevent animation
-        if(!g_flying_mod_is_flying_active) {
+        // Call into mods
+        for(uint i = 0; i < jump_info_update_free_air_animation_on_set_jump_animation_mod_hooks.length(); i++) {
+            if(!(jump_info_update_free_air_animation_on_set_jump_animation_mod_hooks[i] is null)) {
+                jump_info_update_free_air_animation_on_set_jump_animation_mod_hooks[i]();
+            }
+        }
+
+        if(!g_mod_character_should_skip_free_air_jump_animation_once) {
             this_mo.SetCharAnimation("jump",20.0f,flags);
         }
+        g_mod_character_should_skip_free_air_jump_animation_once = false;
 
         this_mo.rigged_object().ik_enabled = false;
     }
@@ -224,9 +257,12 @@ class JumpInfo {
             StartWallJump(wall_dir * -1.0f);
             flip_info.StartWallFlip(wall_dir * -1.0f);
 
-            // FLYING MOD - Resets timer for new wall flip
-            g_flying_mod_wall_flip_time = 0.0f;
-            g_flying_mod_after_wall_flip = true;
+            // Call into mods
+            for(uint i = 0; i < jump_info_update_wall_run_on_wants_to_flip_off_wall_mod_hooks.length(); i++) {
+                if(!(jump_info_update_wall_run_on_wants_to_flip_off_wall_mod_hooks[i] is null)) {
+                    jump_info_update_wall_run_on_wants_to_flip_off_wall_mod_hooks[i]();
+                }
+            }
         }
     }
 
@@ -248,9 +284,11 @@ class JumpInfo {
             }
         }
 
-        // FLYING MOD
-        if(g_flying_mod_is_flying_active) {
-            UpdateFlying(ts);
+        // Call into mods
+        for(uint i = 0; i < jump_info_update_air_controls_after_set_jetpack_velocity_mod_hooks.length(); i++) {
+            if(!(jump_info_update_air_controls_after_set_jetpack_velocity_mod_hooks[i] is null)) {
+                jump_info_update_air_controls_after_set_jetpack_velocity_mod_hooks[i](ts);
+            }
         }
 
         if(!hit_wall){
@@ -289,13 +327,18 @@ class JumpInfo {
         if(!ledge_info.on_ledge){
             ledge_delay -= ts.step();
             if(!follow_jump_path){
-                // FLYING MOD
-                if(g_flying_mod_is_flying_active) {
-                    SetJumpVelocity(ts);
-                } else {
+                // Call into mods
+                for(uint i = 0; i < jump_info_update_air_controls_before_set_jump_velocity_mod_hooks.length(); i++) {
+                    if(!(jump_info_update_air_controls_before_set_jump_velocity_mod_hooks[i] is null)) {
+                        jump_info_update_air_controls_before_set_jump_velocity_mod_hooks[i](ts);
+                    }
+                }
+
+                if(!g_mod_character_should_skip_air_controls_set_jump_velocity_once) {
                     vec3 target_velocity = GetTargetVelocity();
                     this_mo.velocity += target_velocity * _air_control * ts.step();                    
                 }
+                g_mod_character_should_skip_air_controls_set_jump_velocity_once = false;
             }
         }
 
@@ -341,10 +384,11 @@ class JumpInfo {
         } else {
             jump_vel = GetJumpVelocity(target_velocity, ground_normal);
 
-            // FLYING MOD - Reduced initial velocity
-            if(g_flying_mod_is_flying_active) {
-                jump_vel.x *= 0.8f;
-                jump_vel.z *= 0.8f;
+            // Call into mods
+            for(uint i = 0; i < jump_info_start_jump_after_get_non_path_jump_velocity_mod_hooks.length(); i++) {
+                if(!(jump_info_start_jump_after_get_non_path_jump_velocity_mod_hooks[i] is null)) {
+                    jump_info_start_jump_after_get_non_path_jump_velocity_mod_hooks[i](jump_vel);
+                }
             }
         }
         this_mo.velocity = jump_vel;
