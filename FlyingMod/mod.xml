@@ -16,6 +16,6 @@
     <Tag>Script</Tag>
     <Tag>Animation</Tag>
 
-    <SupportedVersion>b4</SupportedVersion>
+    <SupportedVersion>b5</SupportedVersion>
     <NeedsRestart>false</NeedsRestart>
 </Mod>
