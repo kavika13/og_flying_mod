@@ -257,6 +257,7 @@ class JumpInfo {
             if(WantsToFlip()){
                 if(!flip_info.IsFlipping()){
                     flip_info.StartFlip();
+                    ++roll_count;
                 }
             }
             if(!flip_info.IsFlipping() && !flip_info.HasFlipped() && !no_rotate && !has_hit_wall){
@@ -274,7 +275,7 @@ class JumpInfo {
             UpdateWallRun(ts);
         }
 
-        if(WantsToGrabLedge() && (ledge_info.on_ledge || ledge_delay <= 0.0f) && !flip_info.IsFlipping()){
+        if(WantsToGrabLedge() && !fall_death && (ledge_info.on_ledge || ledge_delay <= 0.0f) && !flip_info.IsFlipping() && this_mo.velocity.y > -15.0){
             ledge_info.CheckLedges();
             if(ledge_info.on_ledge){
                 has_hit_wall = false;
