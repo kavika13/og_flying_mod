@@ -1,6 +1,8 @@
 # og_flying_mod
 Flying Mod for Overgrowth
 
+[1.0 version](https://github.com/kavika13/og_flying_mod/releases/tag/1.0)
+
 [Beta 6 version](https://github.com/kavika13/og_flying_mod/releases/tag/b6)
 
 [Beta 5 version](https://github.com/kavika13/og_flying_mod/releases/tag/b5)
