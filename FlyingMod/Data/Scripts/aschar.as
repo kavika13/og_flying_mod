@@ -20,6 +20,7 @@ bool fall_death = false;
 int roll_count = 0;
 
 int num_hit_on_ground = 0;
+int num_strikes = 0;
 
 float throw_weapon_time = -10.0f;
 
@@ -2132,11 +2133,7 @@ void Update(int num_frames) {
         was_controlled = this_mo.controlled;
         was_editor_mode = EditorModeActive();
         if( this_mo.controlled ) {
-            if(EditorModeActive()) {
-                invincible = GetConfigValueBool("player_invincible");
-            } else {
-                invincible = false;
-            }
+            invincible = GetConfigValueBool("player_invincible");
         }
     }
     
@@ -2196,7 +2193,11 @@ void Update(int num_frames) {
                 level.SendMessage("tutorial "+"Rabbits can jump very far");    
             } else if(tutorial == "combat"){
                 if(situation.PlayCombatSong()){
-                    level.SendMessage("tutorial "+"HOLD down "+(use_keyboard?"left mouse button":GetStringDescriptionForBinding("xbox", "attack"))+" to attack");
+                    if(num_strikes < 3){
+                        level.SendMessage("tutorial "+"HOLD down "+(use_keyboard?"left mouse button":GetStringDescriptionForBinding("xbox", "attack"))+" to attack");
+                    } else {
+                        level.SendMessage("tutorial "+"Choose your strike by varying your height, distance, and movement direction.");
+                    }
                 } else {
                     level.SendMessage("tutorial");
                 }            
@@ -6749,6 +6750,7 @@ void UpdateGroundAttackControls(const Timestep &in ts) {
         }else{
             AchievementEvent("ai_attacked");
         }
+        ++num_strikes;
         HandleAIEvent(_attacking);
         breath_speed += 2.0f;
         LoadAppropriateAttack(false, attack_getter);
@@ -9320,7 +9322,7 @@ void ApplyCameraControls(const Timestep &in ts) {
     if(!level.HasFocus()){
         SetGrabMouse(true);
     }
-    if(dialogue_control){
+    if(dialogue_control || level.DialogueCameraControl() ){
         level_cam_weight = 1.0;
         level_cam_rotation.x = camera.GetXRotation();
         level_cam_rotation.y = camera.GetYRotation();
@@ -10025,7 +10027,7 @@ void WaterIntersect(int id) {
     /*if(length(this_mo.velocity) > max_water_speed){
         this_mo.velocity = normalize(this_mo.velocity)*max_water_speed;
     }*/
-    if(water_depth < 2.0 && abs(this_mo.velocity.y) > 4.0 && (!on_ground || state == _ragdoll_state)) {
+    if(water_depth < 2.0 && length(this_mo.velocity) > 4.0 && (!on_ground || state == _ragdoll_state || flip_info.IsRolling())) {
         {
             float ring_size = 0.3;
             vec3 offset = vec3(1,0,0) * ring_size;
