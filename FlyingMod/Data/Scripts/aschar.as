@@ -3405,7 +3405,7 @@ void HandleSpecialKeyPresses() {
             AISound(this_mo.position, VERY_LOUD_SOUND_RADIUS, _sound_type_voice);
         }
 
-        if(GetInputPressed(this_mo.controller_id, "flying_mod_debug_lightning_override")) {
+        if(GetInputPressed(this_mo.controller_id, g_flying_mod_is_enabled ? "flying_mod_debug_lightning_override" : "debug_lightning")) {  // FLYING MOD
             UnTether();
             int num_chars = GetNumCharacters();
 
@@ -3932,7 +3932,9 @@ void UpdateState(const Timestep &in ts) {
     }
 
     // FLYING MOD
-    FlyingStuff(ts);
+    if(g_flying_mod_is_enabled) {
+        FlyingStuff(ts);
+    }
 
     switch(state) {
         case _movement_state:
@@ -6588,6 +6590,10 @@ void ReceiveMessage(string msg) {
     } else if(token == "revive_and_unsave_corpse") {
         Recover();
         params.Remove("dead_body");
+    } else if(token == "flying_mod_enabled") {  // FLYING MOD
+        g_flying_mod_is_enabled = true;
+    } else if(token == "flying_mod_disabled") {  // FLYING MOD
+        g_flying_mod_is_enabled = false;
     } else {
         MindReceiveMessage(msg);  // Pass message to mind if it doesn't match body messages
     }
@@ -7913,7 +7919,7 @@ void UpdateMovementControls(const Timestep &in ts) {
         jump_info.UpdateAirControls(ts);
 
         // FLYING MOD
-        if (!g_flying_mod_is_flying_active) {
+        if (!g_flying_mod_is_enabled || !g_flying_mod_is_flying_active) {
             UpdateAirAttackControls();
         }
 
@@ -8860,7 +8866,7 @@ void HandleAirCollisions(const Timestep &in ts) {
 
     if(landing || (fall_death && hit_anything)) {
         // FLYING MOD - bounce if air dash
-        if(g_flying_mod_air_dash > 0) {
+        if(g_flying_mod_is_enabled && g_flying_mod_air_dash > 0) {
             this_mo.velocity.y *=- 1.0f;
             return;
         }
@@ -11312,7 +11318,15 @@ void SetCameraFromFacing() {
     target_rotation2 = cam_rotation2;
 }
 
+// FLYING MOD
+void LoadConfigFileValues() {
+    if(GetConfigValueString("flying_mod_is_enabled") != "") {
+        g_flying_mod_is_enabled = GetConfigValueBool("flying_mod_is_enabled");
+    }
+}
+
 void PostReset() {
+    LoadConfigFileValues();  // FLYING MOD
     tutorial = "";
     CacheSkeletonInfo();
     weapon_slots.resize(_num_weap_slots);

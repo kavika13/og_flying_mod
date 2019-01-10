@@ -2,6 +2,7 @@
 string flapping = "attack";
 string gliding = "grab";
 
+bool g_flying_mod_is_enabled = true;
 bool g_flying_mod_is_flying_active = false;
 int g_flying_mod_flying_mode = 0;
 float g_flying_mod_flap_counter = 1.0f;
