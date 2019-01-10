@@ -17,7 +17,7 @@
     <Tag>Animation</Tag>
 
     <SupportedVersion>1.4</SupportedVersion>
-    <NeedsRestart>false</NeedsRestart>
+    <NeedsRestart>true</NeedsRestart>
 
     <LevelHookFile>Data/Scripts/flying_mod/config_file_hook.as</LevelHookFile>
 </Mod>
