@@ -156,6 +156,10 @@ key[debug_switch_to_wolf]: 5
 key[debug_switch_to_dog]: 6
 key[debug_switch_to_rabbot]: 7
 
+// Flying mod key bindings
+key[flying_mod_toggle_flying]: f
+key[flying_mod_debug_lightning_override]: g
+
 // SDL's internal gamepad codes are based on XBOX, so these are too
 gamepad[up]:             lefty-
 gamepad[down]:           lefty+

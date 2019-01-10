@@ -259,7 +259,7 @@ void AirDash() {
 
 void FlyingStuff(const Timestep& in ts) {
     // Toggle flying
-    if(this_mo.controlled && GetInputPressed(this_mo.controller_id, g_flying_mod_toggle_flying_key)) {
+    if(this_mo.controlled && GetInputPressed(this_mo.controller_id, "flying_mod_toggle_flying")) {
         if(g_flying_mod_is_flying_active) {
             g_flying_mod_is_flying_active = false;
             g_flying_mod_air_dash = 0;

@@ -3405,7 +3405,7 @@ void HandleSpecialKeyPresses() {
             AISound(this_mo.position, VERY_LOUD_SOUND_RADIUS, _sound_type_voice);
         }
 
-        if(GetInputPressed(this_mo.controller_id, "debug_lightning")) {
+        if(GetInputPressed(this_mo.controller_id, "flying_mod_debug_lightning_override")) {
             UnTether();
             int num_chars = GetNumCharacters();
 
